@@ -89,7 +89,7 @@ $ stat -c "%s %n" -- bin/*logo.com
 254 bin/zlogo.com
 ```
 
-You can recover the original input using the `-D --decode` paramter:
+You can recover the original input using the `-D --decode` parameter:
 
 ```
 $ bin/zpack -D -o logo.com bin/zlogo.com
