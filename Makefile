@@ -45,17 +45,18 @@ $(BIN)/z%.com: $(SRC)/%.asm $(ZP)
 
 $(SRC)/stubs.h: $(BIN)/stub.com
 	@echo '/* Generated file, do not commit */' > $@
+	@echo 'const zpack_stub ZPACK_STUBS[] = {' >> $@
 	@$(foreach s,$(patsubst $(BIN)/%.com,%,$^), \
 		$(eval SIZE = $(shell stat -c %s $(BIN)/$s.com)) \
-		$(eval NAME = $(shell echo $s | tr '[.a-z]' '[_A-Z]')) \
-		echo 'const zpack_stub $(NAME) = {' >> $@; \
-		echo '  "$s.o",' >> $@; \
-		echo '  $(SIZE),' >> $@; \
-		echo '  (const unsigned char[]) {' >> $@; \
-		xxd -i - < $(BIN)/$s.com | sed -e s'/^/  /' >> $@; \
-		echo '  }' >> $@; \
-		echo '};' >> $@; \
+		echo '  {' >> $@; \
+		echo '    "$s",' >> $@; \
+		echo '    $(SIZE),' >> $@; \
+		echo '    (unsigned char[]) {' >> $@; \
+		xxd -i - < $(BIN)/$s.com | sed -e s'/^/    /' >> $@; \
+		echo '    },' >> $@; \
+		echo '  },' >> $@; \
 	)
+	@echo '};' >> $@;
 
 $(BIN)/%: $(SRC)/%.c $(SRC)/stubs.h $(OBJS)
 	$(guard)

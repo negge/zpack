@@ -23,7 +23,7 @@ typedef struct zpack_stub zpack_stub;
 struct zpack_stub {
   const char *name;
   unsigned int size;
-  const unsigned char *buf;
+  unsigned char *buf;
 };
 
 enum {

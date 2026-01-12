@@ -32,6 +32,18 @@ static void usage(const char *argv0) {
    argv0);
 }
 
+/* Identify stub used in packed binary */
+static const zpack_stub *find_stub(const unsigned char *const in, short org) {
+  int i;
+  for (i = 0; i < sizeof(ZPACK_STUBS)/sizeof(zpack_stub); i++) {
+    const zpack_stub *stub = &ZPACK_STUBS[i];
+    /* Set the origin */
+    *(short *)&stub->buf[PROG_ORG] = org;
+    if (!memcmp(in, stub->buf, stub->size)) return stub;
+  }
+  return NULL;
+}
+
 #define MOD_PAYLOAD (0x1)
 #define MOD_DECODE  (0x2)
 
@@ -105,7 +117,7 @@ int main(int argc, char *argv[]) {
     input = argv[optind];
   }
   /* Write the stub */
-  stub = &STUB;
+  stub = &ZPACK_STUBS[0];
   memcpy(out, stub->buf, stub->size);
   /* Fixup the program origin */
   *(short *)&out[PROG_ORG] = origin;
@@ -119,6 +131,8 @@ int main(int argc, char *argv[]) {
     else {
       /* Read the origin */
       origin = *(short *)&in[PROG_ORG];
+      ZPACK_ERROR(!find_stub(in, origin),
+       ("File '%s' not compressed with zpack", input));
       fprintf(stderr, "Program org: 0x%x\n", origin);
       wrote = decompress(out, in + stub->size, size - stub->size);
     }
