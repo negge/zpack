@@ -73,11 +73,11 @@ static int compute(entry_t *const tbl, const int size) {
       while (p + len < size && tbl[p + len].byte == tbl[i + len].byte) {
         len++;
         for (o = 0; o < MAX_OFFSET; o++) {
-          update(&tbl[p].cpy[o], len, off, 0,
+          update(&tbl[p].cpy[o], len, off, LIT,
            CPY_COST(off != o, len) + tbl[p + len].lit[off].bits);
           /* OK to skip literal block if next copy updates offset */
           if (off != tbl[p + len].cpy[off].off) {
-            update(&tbl[p].cpy[o], len, off, 1,
+            update(&tbl[p].cpy[o], len, off, CPY,
              CPY_COST(off != o, len) + tbl[p + len].cpy[off].bits);
           }
         }
@@ -86,7 +86,7 @@ static int compute(entry_t *const tbl, const int size) {
     /* Cost to code literal */
     for (i = 1; i <= size - p; i++) {
       for (o = 0; o < MAX_OFFSET; o++) {
-        update(&tbl[p].lit[o], i, o, 1, LIT_COST(i) + tbl[p + i].cpy[o].bits);
+        update(&tbl[p].lit[o], i, o, CPY, LIT_COST(i) + tbl[p + i].cpy[o].bits);
       }
     }
   }
@@ -134,13 +134,14 @@ static int pack(unsigned char *const out, const entry_t *const tbl,
 #define ZPACK_CHECK_BITS(b) \
  ZPACK_ERROR(bits != b, ("Expected %i bits, found %i", b, bits))
 
-  b = p = o = m = s = i = 0;
+  b = LIT;
+  p = o = m = s = i = 0;
   bits = tbl[p].lit[o].bits;
   while (p < size) {
-    const cost_t *c = b ? &tbl[p].cpy[o] : &tbl[p].lit[o];
+    const cost_t *c = b == CPY ? &tbl[p].cpy[o] : &tbl[p].lit[o];
     ZPACK_CHECK_BITS(c->bits);
     /* Emit literal block */
-    if (b == 0) {
+    if (b == LIT) {
       /* First block is always a literal with implicit leading 0 */
       if (p > 0) write_bit(0);
       write_length(c->len);

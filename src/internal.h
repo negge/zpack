@@ -26,6 +26,11 @@ struct zpack_stub {
   const unsigned char *buf;
 };
 
+enum {
+  LIT = 0,
+  CPY = 1
+};
+
 int compress(unsigned char *const out, const unsigned char *const in,
  const int size);
 
