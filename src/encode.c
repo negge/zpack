@@ -32,7 +32,7 @@ static int elias_cost(int len) {
   return bits;
 }
 
-#define LIT_COST(len) (1 + 8*len + elias_cost(len))
+#define LIT_COST(len) (1 + 8*(len) + elias_cost(len))
 #define CPY_COST(off, len) (1 + 8*(off) + elias_cost(len))
 
 #define LARGE_COST (16*1024*8) /* Assume all packed files are < 16kB */
@@ -125,7 +125,7 @@ static int pack(unsigned char *const out, const entry_t *const tbl,
     j = 1 << msb(l); \
     while (j >>= 1) { \
       write_bit(1); \
-      write_bit(l & j); \
+      write_bit((l) & j); \
     } \
     write_bit(0); \
   } \
