@@ -31,3 +31,35 @@ void store(char *const output, const unsigned char *const out, const int len) {
   fwrite(out, len, 1, fp);
   fclose(fp);
 }
+
+void br_init(bit_reader *const br, const unsigned char *const in, int size) {
+  br->in = in;
+  br->size = size;
+  br->mask = br->idx = br->bits = 0;
+}
+
+unsigned char read_byte(bit_reader *const br) {
+  ZPACK_ERROR(br->idx > br->size, ("Read past end of input buffer"));
+  br->bits += 8;
+  return br->in[br->idx++];
+}
+
+int read_bit(bit_reader *const br) {
+  br->mask >>= 1;
+  if (!br->mask) {
+    br->mask = 128;
+    br->val = read_byte(br);
+    br->bits -= 8;
+  }
+  br->bits++;
+  return br->val & br->mask ? 1 : 0;
+}
+
+int read_length(bit_reader *const br) {
+  int len = 1;
+  while (read_bit(br)) {
+    len <<= 1;
+    len |= read_bit(br);
+  }
+  return len;
+}
