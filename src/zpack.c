@@ -150,6 +150,17 @@ int main(int argc, char *argv[]) {
   fprintf(stderr, "Encoded size: %i bits\n", stats.bits);
   fprintf(stderr, "Packed ratio: %i/%i (%0.2f%%)\n", stats.packed, stats.size,
    100.0f*stats.packed/stats.size);
+
+#define print_stat(l, h) \
+ fprintf(stderr,"%9s: %3i, %4i bits, decodes %4i bytes (%0.2f%%)\n", \
+  l, h.cnt, h.bits, h.bytes, 100.0f*h.bits/(h.bytes*8))
+
+  print_stat("Literal", stats.hist[LIT]);
+  print_stat("Update", stats.hist[UPD]);
+  print_stat("Copy", stats.hist[CPY]);
+  fprintf(stderr, "%9s: %3i, %4i bits\n", "EOF", 1, 9);
+  fprintf(stderr, "%9s: %3i, %4i bits\n", "Total", stats.blocks, stats.bits);
+
   if (flags & MOD_PAYLOAD) {
     fprintf(stderr, "Decoded size: %i bytes\n", stats.size);
   }

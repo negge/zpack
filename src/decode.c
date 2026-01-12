@@ -1,6 +1,14 @@
 #include <stdio.h>
+#include <string.h>
 #include "internal.h"
 #include "io.h"
+
+static void update_stats(zpack_stats *const stats, int typ, int len, int bits) {
+  stats->blocks++;
+  stats->hist[typ].cnt++;
+  stats->hist[typ].bits += 1 + bits + (typ == UPD)*8 + (typ == LIT ? len*8 : 0);
+  stats->hist[typ].bytes += len;
+}
 
 static void unpack(bit_reader *const br, unsigned char *const out,
  zpack_stats *const stats) {
@@ -16,8 +24,14 @@ static void unpack(bit_reader *const br, unsigned char *const out,
   } \
   while (0)
 
+  memset(&stats->hist, 0, sizeof(stats->hist));
+  /* Adjust for the first literal block having implicit leading 0 */
+  stats->hist[LIT].bits = -1;
+  /* Include EOF block here */
+  stats->blocks = 1;
   while (1) {
-    int n, len = read_length(br);
+    int n, bits, len = read_length(br, &bits);
+    update_stats(stats, LIT, len, bits);
     while (len-- > 0) write_byte(read_byte(br));
     n = read_bit(br);
     do {
@@ -36,7 +50,8 @@ static void unpack(bit_reader *const br, unsigned char *const out,
           return;
         }
       }
-      len = read_length(br);
+      len = read_length(br, &bits);
+      update_stats(stats, n ? UPD : CPY, len, bits);
       while (len-- > 0) write_byte(out[i - o]);
     }
     while ((n = read_bit(br)));

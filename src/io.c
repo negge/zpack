@@ -55,11 +55,13 @@ int read_bit(bit_reader *const br) {
   return br->val & br->mask ? 1 : 0;
 }
 
-int read_length(bit_reader *const br) {
+int read_length(bit_reader *const br, int *const bits) {
+  int pre = br->bits;
   int len = 1;
   while (read_bit(br)) {
     len <<= 1;
     len |= read_bit(br);
   }
+  if (*bits) *bits = br->bits - pre;
   return len;
 }

@@ -28,7 +28,8 @@ struct zpack_stub {
 
 enum {
   LIT = 0,
-  CPY = 1
+  CPY = 1,
+  UPD = 2
 };
 
 typedef struct zpack_stats zpack_stats;
@@ -37,6 +38,13 @@ struct zpack_stats {
   int size;
   int bits;
   int packed;
+
+  struct {
+    int cnt;
+    int bits;
+    int bytes;
+  } hist[3];
+  int blocks;
 };
 
 int compress(unsigned char *const out, const unsigned char *const in,
