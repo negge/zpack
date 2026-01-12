@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "internal.h"
 
-static int m, s, i, v, size, bits;
+static int m, s, v, size, bits;
 static const unsigned char *in;
 
 static unsigned char read_byte() {
@@ -30,18 +30,24 @@ static int read_length() {
   return len;
 }
 
-static void write_byte(unsigned char *const out, unsigned char byte) {
-  ZPACK_ERROR(i > DATA_MAX, ("Error, decoded payload exceeds %i", DATA_MAX));
-  out[i++] = byte;
-}
+static int i;
 
 static int unpack(unsigned char *const out) {
   /* Initial offset is 1 */
   int o = 1;
   m = s = i = bits = 0;
+
+#define write_byte(b) \
+  do { \
+    ZPACK_ERROR(i > DATA_MAX, ("Decoded payload exceeds %i", DATA_MAX)); \
+    out[i] = b; \
+    i++; \
+  } \
+  while (0)
+
   while (1) {
     int n, len = read_length();
-    while (len-- > 0) write_byte(out, read_byte());
+    while (len-- > 0) write_byte(read_byte());
     n = read_bit();
     do {
       if (n) {
@@ -54,7 +60,7 @@ static int unpack(unsigned char *const out) {
         }
       }
       len = read_length();
-      while (len-- > 0) write_byte(out, out[i - o]);
+      while (len-- > 0) write_byte(out[i - o]);
     }
     while ((n = read_bit()));
   }
