@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "internal.h"
 
-static int m, s, i, o, v, size, bits;
+static int m, s, i, v, size, bits;
 static const unsigned char *in;
 
 static unsigned char read_byte() {
@@ -36,8 +36,9 @@ static void write_byte(unsigned char *const out, unsigned char byte) {
 }
 
 static int unpack(unsigned char *const out) {
+  /* Initial offset is 1 */
+  int o = 1;
   m = s = i = bits = 0;
-  o = 1;
   while (1) {
     int n, len = read_length();
     while (len-- > 0) write_byte(out, read_byte());
@@ -45,8 +46,10 @@ static int unpack(unsigned char *const out) {
     do {
       if (n) {
         o = 255 - read_byte();
+        /* offset 0 means EOF reached */
         if (!o) {
           ZPACK_ERROR(v & (m - 1), ("Trailing bits not zero %i", v));
+          ZPACK_ERROR(s != size, ("Did not read all input %i != %i", s, size));
           return bits;
         }
       }
@@ -62,7 +65,6 @@ void decompress(unsigned char *const out, const unsigned char *const input,
   in = input;
   size = sz;
   stats->bits = unpack(out);
-  ZPACK_ERROR(s != size, ("Did not read all input %i %i", s, size));
   stats->size = i;
   stats->packed = sz;
 }
