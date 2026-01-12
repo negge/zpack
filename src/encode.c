@@ -169,8 +169,8 @@ static int pack(unsigned char *const out, const entry_t *const tbl,
 int compress(unsigned char *const out, const unsigned char *const in,
  const int size) {
   static entry_t tbl[DATA_MAX + 1];
-  int p, o, i;
-  for (p = 0; p < size; p++) for (o = 0; o < MAX_OFFSET; o++) {
+  int p, i;
+  for (p = 0; p < size; p++) {
     tbl[p].byte = in[p];
     /* Find the last position this byte was seen */
     for (i = p - 1; i >= 0 && tbl[i].byte != tbl[p].byte; i--);
