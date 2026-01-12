@@ -57,12 +57,12 @@ static int unpack(unsigned char *const out) {
   }
 }
 
-int decompress(unsigned char *const out, const unsigned char *const input,
- const int sz) {
+void decompress(unsigned char *const out, const unsigned char *const input,
+ const int sz, zpack_stats *stats) {
   in = input;
   size = sz;
-  fprintf(stderr, "Encoded size: %i bits\n", unpack(out));
+  stats->bits = unpack(out);
   ZPACK_ERROR(s != size, ("Did not read all input %i %i", s, size));
-  fprintf(stderr, "Packed ratio: %i/%i (%0.2f%%)\n", size, i, 100.0f*size/i);
-  return i;
+  stats->size = i;
+  stats->packed = sz;
 }

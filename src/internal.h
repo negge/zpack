@@ -31,10 +31,18 @@ enum {
   CPY = 1
 };
 
+typedef struct zpack_stats zpack_stats;
+
+struct zpack_stats {
+  int size;
+  int bits;
+  int packed;
+};
+
 int compress(unsigned char *const out, const unsigned char *const in,
  const int size);
 
-int decompress(unsigned char *const out, const unsigned char *const in,
- const int size);
+void decompress(unsigned char *const out, const unsigned char *const in,
+ const int size, zpack_stats *stats);
 
 #endif

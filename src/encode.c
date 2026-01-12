@@ -53,7 +53,7 @@ static int msb(int v) {
   return ret;
 }
 
-static int compute(entry_t *const tbl, const int size) {
+static void compute(entry_t *const tbl, const int size) {
   int p, o, i;
   /* Set initial costs to very large value */
   for (p = 0; p < size; p++) for (o = 0; o < MAX_OFFSET; o++) {
@@ -92,7 +92,6 @@ static int compute(entry_t *const tbl, const int size) {
   }
   /* No leading bit on first literal */
   for (o = 0; o < MAX_OFFSET; o++) tbl[0].lit[o].bits--;
-  return tbl[0].lit[0].bits;
 }
 
 static int pack(unsigned char *const out, const entry_t *const tbl,
@@ -177,9 +176,6 @@ int compress(unsigned char *const out, const unsigned char *const in,
     for (i = p - 1; i >= 0 && tbl[i].byte != tbl[p].byte; i--);
     tbl[p].last = i;
   }
-  int bits = compute(tbl, size);
-  fprintf(stderr, "Encoded size: %i bits\n", bits);
-  fprintf(stderr, "Packed ratio: %i/%i (%0.2f%%)\n",
-   (bits + 7) >> 3, size, 100.0f*((bits + 7) >> 3)/size);
+  compute(tbl, size);
   return pack(out, tbl, size);
 }

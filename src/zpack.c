@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
   int flags;
   const zpack_stub *stub;
   static unsigned char out[DATA_MAX];
-  int wrote;
+  zpack_stats stats;
   /* Parse the parameters */
   output = NULL;
   input = NULL;
@@ -120,37 +120,49 @@ int main(int argc, char *argv[]) {
   size = load(input, in, DATA_MAX);
 
   if (flags & MOD_DECODE) {
-    if (flags & MOD_PAYLOAD) {
-      wrote = decompress(out, in, size);
-    }
+    if (flags & MOD_PAYLOAD) decompress(out, in, size, &stats);
     else {
       /* Read the origin */
       origin = *(short *)&in[PROG_ORG];
       stub = find_stub(in, origin);
       ZPACK_ERROR(!stub, ("File '%s' not compressed with zpack", input));
+      /* Print origin */
       fprintf(stderr, "Program org: 0x%x\n", origin);
-      wrote = decompress(out, in + stub->size, size - stub->size);
+      /* Skip over stub */
+      decompress(out, in + stub->size, size - stub->size, &stats);
     }
-    fprintf(stderr, "Decoded size: %i (bytes)\n", wrote);
-    fprintf(stderr, "Binary ratio: %i/%i (%0.2f%%)\n", size, wrote,
-     100.f*size/wrote);
   }
   else {
-    wrote = compress(out, in, size);
+    static unsigned char dec[DATA_MAX];
+    decompress(dec, out, compress(out, in, size), &stats);
+
+    /* Test decoded payload matches input */
+    ZPACK_ERROR(size != stats.size,
+     ("Decoded size %i does not match input size %i", stats.size, size));
+    ZPACK_ERROR(memcmp(in, dec, size), ("Decoded output does not match input"));
 
     /* Fixup the program origin */
     stub = &ZPACK_STUBS[0];
     *(short *)&stub->buf[PROG_ORG] = origin;
+  }
 
-    int packed = wrote + stub->size;
+  /* Print statistics */
+  fprintf(stderr, "Encoded size: %i bits\n", stats.bits);
+  fprintf(stderr, "Packed ratio: %i/%i (%0.2f%%)\n", stats.packed, stats.size,
+   100.0f*stats.packed/stats.size);
+  if (flags & MOD_PAYLOAD) {
+    fprintf(stderr, "Decoded size: %i bytes\n", stats.size);
+  }
+  else {
     fprintf(stderr, "Decoder size: %i bytes\n", stub->size);
-    fprintf(stderr, "Binary ratio: %i/%i (%0.2f%%)\n", packed, size,
-     100.f*packed/size);
+    int size = stats.packed + stub->size;
+    fprintf(stderr, "Binary ratio: %i/%i (%0.2f%%)\n", size, stats.size,
+     100.f*size/stats.size);
   }
 
   if (output != NULL) {
     /* Write decoded payload */
-    if (flags & MOD_DECODE) store(output, out, wrote);
+    if (flags & MOD_DECODE) store(output, out, stats.size);
     /* Write encoded binary */
     else {
       static unsigned char buf[DATA_MAX];
@@ -166,7 +178,7 @@ int main(int argc, char *argv[]) {
       /* Write the decoder stub if not -p --payload */
       if (!(flags & MOD_PAYLOAD)) write_buf(stub->buf, stub->size);
       /* Write the payload */
-      write_buf(out, wrote);
+      write_buf(out, stats.packed);
 
       store(output, buf, len);
     }
