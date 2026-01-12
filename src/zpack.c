@@ -116,11 +116,6 @@ int main(int argc, char *argv[]) {
   if (optind != argc) {
     input = argv[optind];
   }
-  /* Write the stub */
-  stub = &ZPACK_STUBS[0];
-  memcpy(out, stub->buf, stub->size);
-  /* Fixup the program origin */
-  *(short *)&out[PROG_ORG] = origin;
   /* Load the data */
   size = load(input, in, DATA_MAX);
 
@@ -131,8 +126,8 @@ int main(int argc, char *argv[]) {
     else {
       /* Read the origin */
       origin = *(short *)&in[PROG_ORG];
-      ZPACK_ERROR(!find_stub(in, origin),
-       ("File '%s' not compressed with zpack", input));
+      stub = find_stub(in, origin);
+      ZPACK_ERROR(!stub, ("File '%s' not compressed with zpack", input));
       fprintf(stderr, "Program org: 0x%x\n", origin);
       wrote = decompress(out, in + stub->size, size - stub->size);
     }
@@ -141,7 +136,12 @@ int main(int argc, char *argv[]) {
      100.f*size/wrote);
   }
   else {
-    wrote = compress(out + stub->size, in, size);
+    wrote = compress(out, in, size);
+
+    /* Fixup the program origin */
+    stub = &ZPACK_STUBS[0];
+    *(short *)&stub->buf[PROG_ORG] = origin;
+
     int packed = wrote + stub->size;
     fprintf(stderr, "Decoder size: %i bytes\n", stub->size);
     fprintf(stderr, "Binary ratio: %i/%i (%0.2f%%)\n", packed, size,
@@ -149,11 +149,26 @@ int main(int argc, char *argv[]) {
   }
 
   if (output != NULL) {
-    if (flags & MOD_PAYLOAD || flags & MOD_DECODE) {
-      store(output, out + stub->size, wrote);
-    }
+    /* Write decoded payload */
+    if (flags & MOD_DECODE) store(output, out, wrote);
+    /* Write encoded binary */
     else {
-      store(output, out, stub->size + wrote);
+      static unsigned char buf[DATA_MAX];
+      int len = 0;
+
+#define write_buf(b, l) \
+  do { \
+    memcpy(&buf[len], b, l); \
+    len += l; \
+  } \
+  while (0)
+
+      /* Write the decoder stub if not -p --payload */
+      if (!(flags & MOD_PAYLOAD)) write_buf(stub->buf, stub->size);
+      /* Write the payload */
+      write_buf(out, wrote);
+
+      store(output, buf, len);
     }
   }
   return EXIT_SUCCESS;
