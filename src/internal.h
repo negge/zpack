@@ -26,11 +26,11 @@ struct zpack_stub {
   unsigned char *buf;
 };
 
-enum {
+typedef enum {
   LIT = 0,
   CPY = 1,
   UPD = 2
-};
+} block_t;
 
 typedef struct zpack_stats zpack_stats;
 

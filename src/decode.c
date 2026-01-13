@@ -3,11 +3,12 @@
 #include "internal.h"
 #include "io.h"
 
-static void update_stats(zpack_stats *const stats, int typ, int len, int bits) {
+static void update_stats(zpack_stats *const stats, const block_t blk,
+ const int len, const int bits) {
   stats->blocks++;
-  stats->hist[typ].cnt++;
-  stats->hist[typ].bits += 1 + bits + (typ == UPD)*8 + (typ == LIT ? len*8 : 0);
-  stats->hist[typ].bytes += len;
+  stats->hist[blk].cnt++;
+  stats->hist[blk].bits += 1 + bits + (blk == UPD)*8 + (blk == LIT ? len*8 : 0);
+  stats->hist[blk].bytes += len;
 }
 
 static void unpack(bit_reader *const br, unsigned char *const out,

@@ -9,7 +9,7 @@ struct cost_t {
   int bits;
   int len;
   int off;
-  int next;
+  block_t next;
 };
 
 typedef struct entry_t entry_t;
@@ -38,7 +38,8 @@ static int elias_cost(int len) {
 #define LARGE_COST (16*1024*8) /* Assume all packed files are < 16kB */
 #define EOF_COST (1 + 8)
 
-static void update(cost_t *c, int len, int off, int next, int bits) {
+static void update(cost_t *const c, const int len, const int off,
+ const block_t next, const int bits) {
   if (bits < c->bits || (bits == c->bits && len < c->len)) {
     c->bits = bits;
     c->len = len;
