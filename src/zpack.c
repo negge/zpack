@@ -64,11 +64,17 @@ static void print_stats(const zpack_stats *const stats, int flags,
   fmt[6] = digits(stats->blocks) + '0';
   fmt[11] = digits(stats->bits) + '0';
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+  char fmt2[] = ", decodes %0i bytes (%0.2f%%)";
+  fmt2[11] = MAX(fmt2[11], digits(stats->hist[LIT].bytes) + '0');
+  fmt2[11] = MAX(fmt2[11], digits(stats->hist[CPY].bytes) + '0');
+  fmt2[11] = MAX(fmt2[11], digits(stats->hist[UPD].bytes) + '0');
+
 #define print_stat(l, h) \
   do { \
     char buf[80]; \
-    sprintf(buf, ", decodes %4i bytes (%0.2f%%)", h.bytes, \
-     100.0f*h.bits/(h.bytes*8)); \
+    sprintf(buf, fmt2, h.bytes, 100.0f*h.bits/(h.bytes*8)); \
     fprintf(stderr, fmt, l, h.cnt, h.bits, buf); \
   } \
   while (0)
