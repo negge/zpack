@@ -73,8 +73,8 @@ static void print_stats(const zpack_stats *const stats, int flags,
 
 #define print_stat(l, h) \
   do { \
-    char buf[80]; \
-    sprintf(buf, fmt2, h.bytes, 100.0f*h.bits/(h.bytes*8)); \
+    char buf[80] = ""; \
+    if (h.bytes) sprintf(buf, fmt2, h.bytes, 100.0f*h.bits/(h.bytes*8)); \
     fprintf(stderr, fmt, l, h.cnt, h.bits, buf); \
   } \
   while (0)
