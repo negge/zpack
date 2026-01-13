@@ -47,21 +47,37 @@ static const zpack_stub *find_stub(const unsigned char *const in, short org) {
 #define MOD_PAYLOAD (0x1)
 #define MOD_DECODE  (0x2)
 
+static int digits(int v) {
+  int ret = 1;
+  while (v/=10) ret++;
+  return ret;
+}
+
 static void print_stats(const zpack_stats *const stats, int flags,
  const zpack_stub *const stub) {
   fprintf(stderr, "Encoded size: %i bits\n", stats->bits);
   fprintf(stderr, "Packed ratio: %i/%i (%0.2f%%)\n", stats->packed, stats->size,
    100.0f*stats->packed/stats->size);
 
+  /* Size columns based on total values */
+  char fmt[] = "%9s: %3i, %4i bits%s\n";
+  fmt[6] = digits(stats->blocks) + '0';
+  fmt[11] = digits(stats->bits) + '0';
+
 #define print_stat(l, h) \
- fprintf(stderr,"%9s: %3i, %4i bits, decodes %4i bytes (%0.2f%%)\n", \
-  l, h.cnt, h.bits, h.bytes, 100.0f*h.bits/(h.bytes*8))
+  do { \
+    char buf[80]; \
+    sprintf(buf, ", decodes %4i bytes (%0.2f%%)", h.bytes, \
+     100.0f*h.bits/(h.bytes*8)); \
+    fprintf(stderr, fmt, l, h.cnt, h.bits, buf); \
+  } \
+  while (0)
 
   print_stat("Literal", stats->hist[LIT]);
   print_stat("Update", stats->hist[UPD]);
   print_stat("Copy", stats->hist[CPY]);
-  fprintf(stderr, "%9s: %3i, %4i bits\n", "EOF", 1, 9);
-  fprintf(stderr, "%9s: %3i, %4i bits\n", "Total", stats->blocks, stats->bits);
+  fprintf(stderr, fmt, "EOF", 1, 9, "");
+  fprintf(stderr, fmt, "Total", stats->blocks, stats->bits, "");
 
   if (flags & MOD_PAYLOAD) {
     fprintf(stderr, "Decoded size: %i bytes\n", stats->size);
