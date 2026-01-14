@@ -41,7 +41,7 @@ static int elias_cost(int len) {
 
 static void update(cost_t *const c, const int len, const int off,
  const block_t next, const int bits) {
-  if (bits < c->bits || (bits == c->bits && len < c->len)) {
+  if (bits < c->bits || (bits == c->bits && len > c->len)) {
     c->bits = bits;
     c->len = len;
     c->off = off;
