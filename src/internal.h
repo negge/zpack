@@ -47,6 +47,9 @@ struct zpack_stats {
   int blocks;
 };
 
+#define MOD_PAYLOAD (0x1)
+#define MOD_DECODE  (0x2)
+
 int compress(unsigned char *const out, const unsigned char *const in,
  const int size);
 

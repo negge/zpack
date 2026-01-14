@@ -44,9 +44,6 @@ static const zpack_stub *check_stub(const unsigned char *const in, short org) {
   return NULL;
 }
 
-#define MOD_PAYLOAD (0x1)
-#define MOD_DECODE  (0x2)
-
 static int digits(int v) {
   int ret = 1;
   while (v/=10) ret++;
