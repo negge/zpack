@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
   int size;
   short origin;
   int flags;
-  const zpack_stub *stub;
+  const zpack_stub *stub = NULL;
   static unsigned char out[DATA_MAX];
   zpack_stats stats;
   /* Parse the parameters */
