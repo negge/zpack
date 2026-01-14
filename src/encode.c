@@ -54,7 +54,7 @@ static int msb(int v) {
   return ret;
 }
 
-static void compute(entry_t *const tbl, const int size) {
+static void compute(entry_t *const tbl, const int size, const int flags) {
   int p, o, i;
   /* Set initial costs to very large value */
   for (p = 0; p < size; p++) for (o = 0; o < MAX_OFFSET; o++) {
@@ -70,16 +70,17 @@ static void compute(entry_t *const tbl, const int size) {
     /* Walk backwards to each previous instance of the byte */
     for (i = tbl[p].last; i >= 0 && p - i <= MAX_OFFSET; i = tbl[i].last) {
       int off = p - i - 1; /* MAX_OFFSET is EOF in decoder, so subtract 1 */
-      int len = 0;
+      int ext = !!(flags & MOD_EXT_CPY);
+      int len = ext;
       while (p + len < size && tbl[p + len].byte == tbl[i + len].byte) {
         len++;
         for (o = 0; o < MAX_OFFSET; o++) {
           update(&tbl[p].cpy[o], len, off, LIT,
-           CPY_COST(off != o, len) + tbl[p + len].lit[off].bits);
+           CPY_COST(off != o, len - ext) + tbl[p + len].lit[off].bits);
           /* OK to skip literal block if next copy updates offset */
           if (off != tbl[p + len].cpy[off].off) {
             update(&tbl[p].cpy[o], len, off, CPY,
-             CPY_COST(off != o, len) + tbl[p + len].cpy[off].bits);
+             CPY_COST(off != o, len - ext) + tbl[p + len].cpy[off].bits);
           }
         }
       }
@@ -96,7 +97,7 @@ static void compute(entry_t *const tbl, const int size) {
 }
 
 static int pack(unsigned char *const out, const entry_t *const tbl,
- const int size) {
+ const int size, const int flags) {
   int b, p, o, m, s, i, bits;
 
 #define write_byte(b) \
@@ -154,7 +155,7 @@ static int pack(unsigned char *const out, const entry_t *const tbl,
         write_bit(1);
         write_byte(MAX_OFFSET - (c->off + 1));
       }
-      write_length(c->len);
+      write_length(c->len - !!(flags & MOD_EXT_CPY));
     }
     p += c->len;
     o = c->off;
@@ -168,7 +169,7 @@ static int pack(unsigned char *const out, const entry_t *const tbl,
 }
 
 int compress(unsigned char *const out, const unsigned char *const in,
- const int size) {
+ const int size, const int flags) {
   static entry_t tbl[DATA_MAX + 1];
   int p, i;
   for (p = 0; p < size; p++) {
@@ -177,6 +178,6 @@ int compress(unsigned char *const out, const unsigned char *const in,
     for (i = p - 1; i >= 0 && tbl[i].byte != tbl[p].byte; i--);
     tbl[p].last = i;
   }
-  compute(tbl, size);
-  return pack(out, tbl, size);
+  compute(tbl, size, flags);
+  return pack(out, tbl, size, flags);
 }

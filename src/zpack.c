@@ -8,16 +8,17 @@
 
 #define PROG_ORG (1)
 
-const char *OPTSTRING = "o:O:cpDh";
+const char *OPTSTRING = "o:O:cpDxh";
 
 const struct option OPTIONS[] = {
-  { "output",  required_argument, NULL, 'o' },
-  { "origin",  required_argument, NULL, 'O' },
-  { "check",   no_argument,       NULL, 'c' },
-  { "payload", no_argument,       NULL, 'p' },
-  { "decode",  no_argument,       NULL, 'D' },
-  { "help",    no_argument,       NULL, 'h' },
-  { NULL,      0,                 NULL,  0  }
+  { "output",   required_argument, NULL, 'o' },
+  { "origin",   required_argument, NULL, 'O' },
+  { "check",    no_argument,       NULL, 'c' },
+  { "payload",  no_argument,       NULL, 'p' },
+  { "decode",   no_argument,       NULL, 'D' },
+  { "ext-copy", no_argument,       NULL, 'x' },
+  { "help",     no_argument,       NULL, 'h' },
+  { NULL,       0,                 NULL,  0  }
 };
 
 static void usage(const char *argv0) {
@@ -28,6 +29,7 @@ static void usage(const char *argv0) {
    "  -c --check                      Compress stdin and print statistics\n"
    "  -p --payload                    Write out just the payload\n"
    "  -D --decode                     Assume packed input and decompress\n"
+   "  -x --ext-copy                   Extend copy length by 1 (min of 2)\n"
    "  -h --help                       Display this help and exit\n",
    argv0);
 }
@@ -42,6 +44,19 @@ static const zpack_stub *check_stub(const unsigned char *const in, short org) {
     if (!memcmp(in, stub->buf, stub->size)) return stub;
   }
   return NULL;
+}
+
+/* Find stub based on configuration flags */
+static const zpack_stub *find_stub(const int flags) {
+  char tmp[32];
+  int i;
+  sprintf(tmp, "stub");
+  if (flags & MOD_EXT_CPY) sprintf(tmp + strlen(tmp), "x");
+  for (i = 0; i < sizeof(ZPACK_STUBS)/sizeof(zpack_stub); i++) {
+    const zpack_stub *stub = &ZPACK_STUBS[i];
+    if (strcmp(stub->name, tmp) == 0) return stub;
+  }
+  ZPACK_ERROR(1, ("Could not find stub '%s'", tmp));
 }
 
 static int digits(int v) {
@@ -86,7 +101,7 @@ static void print_stats(const zpack_stats *const stats, int flags,
     fprintf(stderr, "Decoded size: %i bytes\n", stats->size);
   }
   else {
-    fprintf(stderr, "Decoder size: %i bytes\n", stub->size);
+    fprintf(stderr, "Decoder stub: %i bytes, %s.com\n", stub->size, stub->name);
     int size = stats->packed + stub->size;
     fprintf(stderr, "Binary ratio: %i/%i (%0.2f%%)\n", size, stats->size,
      100.f*size/stats->size);
@@ -132,6 +147,10 @@ int main(int argc, char *argv[]) {
         flags |= MOD_DECODE;
         break;
       }
+      case 'x' : {
+        flags |= MOD_EXT_CPY;
+        break;
+      }
       case 'h' :
       default : {
         usage(argv[0]);
@@ -166,7 +185,7 @@ int main(int argc, char *argv[]) {
   size = load(input, in, DATA_MAX);
 
   if (flags & MOD_DECODE) {
-    if (flags & MOD_PAYLOAD) decompress(out, in, size, &stats);
+    if (flags & MOD_PAYLOAD) decompress(out, in, size, &stats, flags);
     else {
       /* Read the origin */
       origin = *(short *)&in[PROG_ORG];
@@ -175,12 +194,12 @@ int main(int argc, char *argv[]) {
       /* Print origin */
       fprintf(stderr, "Program org: 0x%x\n", origin);
       /* Skip over stub */
-      decompress(out, in + stub->size, size - stub->size, &stats);
+      decompress(out, in + stub->size, size - stub->size, &stats, flags);
     }
   }
   else {
     static unsigned char dec[DATA_MAX];
-    decompress(dec, out, compress(out, in, size), &stats);
+    decompress(dec, out, compress(out, in, size, flags), &stats, flags);
 
     /* Test decoded payload matches input */
     ZPACK_ERROR(size != stats.size,
@@ -188,7 +207,7 @@ int main(int argc, char *argv[]) {
     ZPACK_ERROR(memcmp(in, dec, size), ("Decoded output does not match input"));
 
     /* Fixup the program origin */
-    stub = &ZPACK_STUBS[0];
+    stub = find_stub(flags);
     *(short *)&stub->buf[PROG_ORG] = origin;
   }
 

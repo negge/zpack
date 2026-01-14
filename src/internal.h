@@ -49,11 +49,12 @@ struct zpack_stats {
 
 #define MOD_PAYLOAD (0x1)
 #define MOD_DECODE  (0x2)
+#define MOD_EXT_CPY (0x4)
 
 int compress(unsigned char *const out, const unsigned char *const in,
- const int size);
+ const int size, const int flags);
 
 void decompress(unsigned char *const out, const unsigned char *const in,
- const int size, zpack_stats *stats);
+ const int size, zpack_stats *stats, const int flags);
 
 #endif

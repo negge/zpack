@@ -12,7 +12,7 @@ static void update_stats(zpack_stats *const stats, const block_t blk,
 }
 
 static void unpack(bit_reader *const br, unsigned char *const out,
- zpack_stats *const stats) {
+ zpack_stats *const stats, const int flags) {
   /* Initial offset is 1 */
   int o = 1;
   int i = 0;
@@ -51,7 +51,7 @@ static void unpack(bit_reader *const br, unsigned char *const out,
           return;
         }
       }
-      len = read_length(br, &bits);
+      len = read_length(br, &bits) + !!(flags & MOD_EXT_CPY);
       update_stats(stats, n ? UPD : CPY, len, bits);
       while (len-- > 0) write_byte(out[i - o]);
     }
@@ -60,8 +60,8 @@ static void unpack(bit_reader *const br, unsigned char *const out,
 }
 
 void decompress(unsigned char *const out, const unsigned char *const in,
- const int size, zpack_stats *stats) {
+ const int size, zpack_stats *stats, const int flags) {
   bit_reader br;
   br_init(&br, in, size);
-  unpack(&br, out, stats);
+  unpack(&br, out, stats, flags);
 }

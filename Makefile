@@ -27,6 +27,11 @@ ifeq (run, $(firstword $(MAKECMDGOALS)))
   endif
 endif
 
+define exec
+$(1)
+
+endef
+
 all: $(BINS) $(OBJS)
 
 guard=@mkdir -p $(@D)
@@ -39,6 +44,12 @@ $(BIN)/%.com: $(SRC)/%.asm
 	$(guard)
 	$(AS) $(ASFLAGS) -o $@ $<
 
+$(BIN)/stub.com: $(SRC)/stub.asm
+	$(guard)
+	$(foreach x,0 1, $(eval STUB = stub$(if $(filter $(x),1),x,)) \
+	$(call exec, $(AS) $(ASFLAGS) -o $(BIN)/$(STUB).com $< \
+	 -DZPACK_EXT_CPY=$(x)))
+
 $(BIN)/z%.com: $(SRC)/%.asm $(ZP)
 	$(AS) $(ASFLAGS) -DORIGIN=$(ORIGIN) -o $@ $<
 	$(ZP) -o $@ $(ZPFLAGS) $@
@@ -46,7 +57,7 @@ $(BIN)/z%.com: $(SRC)/%.asm $(ZP)
 $(SRC)/stubs.h: $(BIN)/stub.com
 	@echo '/* Generated file, do not commit */' > $@
 	@echo 'const zpack_stub ZPACK_STUBS[] = {' >> $@
-	@$(foreach s,$(patsubst $(BIN)/%.com,%,$^), \
+	@$(foreach s,$(patsubst $(BIN)/%.com,%,$(wildcard $(BIN)/stub*.com)), \
 		$(eval SIZE = $(shell stat -c %s $(BIN)/$s.com)) \
 		echo '  {' >> $@; \
 		echo '    "$s",' >> $@; \

@@ -17,6 +17,9 @@ start:
   jc .new_offset
 .copy_offset:
   call .get_elias
+%if ZPACK_EXT_CPY
+  inc cx
+%endif
   push si
   lea si, [di + bx]
   rep movsb
