@@ -62,6 +62,6 @@ int read_length(bit_reader *const br, int *const bits) {
     len <<= 1;
     len |= read_bit(br);
   }
-  if (*bits) *bits = br->bits - pre;
+  if (bits) *bits = br->bits - pre;
   return len;
 }
