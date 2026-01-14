@@ -2,6 +2,7 @@
 #include "internal.h"
 
 #define MAX_OFFSET (255)
+#define BAR_SIZE (60)
 
 typedef struct cost_t cost_t;
 
@@ -67,6 +68,13 @@ static void compute(entry_t *const tbl, const int size, const int flags) {
 
   /* For each position consider cost with both literal and copy blocks */
   for (p = size - 1; p >= 0; p--) {
+
+    /* Print progress bar */
+    o = BAR_SIZE*p/size;
+    fprintf(stderr, " [");
+    for (i = BAR_SIZE; i > 0; i--) fprintf(stderr, "%c", i > o ? '#' : '.');
+    fprintf(stderr, "] %0.2f%%\r", (1 - (float)p/size)*100);
+
     /* Walk backwards to each previous instance of the byte */
     for (i = tbl[p].last; i >= 0 && p - i <= MAX_OFFSET; i = tbl[i].last) {
       int off = p - i - 1; /* MAX_OFFSET is EOF in decoder, so subtract 1 */
@@ -92,6 +100,8 @@ static void compute(entry_t *const tbl, const int size, const int flags) {
       }
     }
   }
+  fprintf(stderr, "\n");
+
   /* No leading bit on first literal */
   for (o = 0; o < MAX_OFFSET; o++) tbl[0].lit[o].bits--;
 }
