@@ -33,7 +33,7 @@ static void usage(const char *argv0) {
 }
 
 /* Identify stub used in packed binary */
-static const zpack_stub *find_stub(const unsigned char *const in, short org) {
+static const zpack_stub *check_stub(const unsigned char *const in, short org) {
   int i;
   for (i = 0; i < sizeof(ZPACK_STUBS)/sizeof(zpack_stub); i++) {
     const zpack_stub *stub = &ZPACK_STUBS[i];
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
     else {
       /* Read the origin */
       origin = *(short *)&in[PROG_ORG];
-      stub = find_stub(in, origin);
+      stub = check_stub(in, origin);
       ZPACK_ERROR(!stub, ("File '%s' not compressed with zpack", input));
       /* Print origin */
       fprintf(stderr, "Program org: 0x%x\n", origin);
