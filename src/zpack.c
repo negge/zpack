@@ -8,7 +8,7 @@
 
 #define PROG_ORG (1)
 
-const char *OPTSTRING = "o:O:cpDxh";
+const char *OPTSTRING = "o:O:cpDxqh";
 
 const struct option OPTIONS[] = {
   { "output",   required_argument, NULL, 'o' },
@@ -17,6 +17,7 @@ const struct option OPTIONS[] = {
   { "payload",  no_argument,       NULL, 'p' },
   { "decode",   no_argument,       NULL, 'D' },
   { "ext-copy", no_argument,       NULL, 'x' },
+  { "quiet",    no_argument,       NULL, 'q' },
   { "help",     no_argument,       NULL, 'h' },
   { NULL,       0,                 NULL,  0  }
 };
@@ -30,6 +31,7 @@ static void usage(const char *argv0) {
    "  -p --payload                    Write out just the payload\n"
    "  -D --decode                     Assume packed input and decompress\n"
    "  -x --ext-copy                   Extend copy length by 1 (min of 2)\n"
+   "  -q --quiet                      Print only error messages\n"
    "  -h --help                       Display this help and exit\n",
    argv0);
 }
@@ -151,6 +153,10 @@ int main(int argc, char *argv[]) {
         flags |= MOD_EXT_CPY;
         break;
       }
+      case 'q' : {
+        flags |= MOD_QUIET;
+        break;
+      }
       case 'h' :
       default : {
         usage(argv[0]);
@@ -212,7 +218,7 @@ int main(int argc, char *argv[]) {
   }
 
   /* Print statistics */
-  print_stats(&stats, flags, stub);
+  if (!(flags & MOD_QUIET)) print_stats(&stats, flags, stub);
 
   if (output != NULL) {
     /* Write decoded payload */

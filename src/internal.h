@@ -50,6 +50,7 @@ struct zpack_stats {
 #define MOD_PAYLOAD (0x1)
 #define MOD_DECODE  (0x2)
 #define MOD_EXT_CPY (0x4)
+#define MOD_QUIET   (0x10)
 
 int compress(unsigned char *const out, const unsigned char *const in,
  const int size, const int flags);
