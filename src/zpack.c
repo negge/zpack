@@ -127,6 +127,7 @@ int main(int argc, char *argv[]) {
   input = NULL;
   origin = 0x1100;
   flags = 0;
+  stub = NULL;
   while ((c = getopt_long(argc, argv, OPTSTRING, OPTIONS, &opt_index)) != EOF) {
     switch (c) {
       case 'o' : {
@@ -212,9 +213,11 @@ int main(int argc, char *argv[]) {
      ("Decoded size %i does not match input size %i", stats.size, size));
     ZPACK_ERROR(memcmp(in, dec, size), ("Decoded output does not match input"));
 
-    /* Fixup the program origin */
-    stub = find_stub(flags);
-    *(short *)&stub->buf[PROG_ORG] = origin;
+    /* Fixup the program origin (only needed if not payload-only) */
+    if (!(flags & MOD_PAYLOAD)) {
+      stub = find_stub(flags);
+      *(short *)&stub->buf[PROG_ORG] = origin;
+    }
   }
 
   /* Print statistics */
