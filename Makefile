@@ -58,7 +58,7 @@ $(SRC)/stubs.h: $(BIN)/stub.com
 	@echo '/* Generated file, do not commit */' > $@
 	@echo 'const zpack_stub ZPACK_STUBS[] = {' >> $@
 	@$(foreach s,$(patsubst $(BIN)/%.com,%,$(wildcard $(BIN)/stub*.com)), \
-		$(eval SIZE = $(shell stat -c %s $(BIN)/$s.com)) \
+		$(eval SIZE = $(shell stat -f %z $(BIN)/$s.com)) \
 		echo '  {' >> $@; \
 		echo '    "$s",' >> $@; \
 		echo '    $(SIZE),' >> $@; \
